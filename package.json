@@ -1,0 +1,26 @@
+{
+  "name": "@ezakto/react-stylesheet",
+  "version": "0.1.0",
+  "description": "Good ol' CSS styling in React",
+  "main": "index.js",
+  "scripts": {
+    "build": "browserify -t babelify -x react -s ReactStyleSheet ./src/stylesheet.js -o ./dist/react-stylesheet.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nicolás Arias",
+  "license": "MIT",
+  "dependencies": {
+    "css-select": "^2.0.2",
+    "css-what": "^3.2.0"
+  },
+  "peerDependencies": {
+    "react": "^16.9.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.6.0",
+    "@babel/preset-env": "^7.6.0",
+    "@babel/preset-react": "^7.0.0",
+    "babelify": "^10.0.0",
+    "browserify": "^16.5.0"
+  }
+}
