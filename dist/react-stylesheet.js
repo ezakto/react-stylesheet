@@ -1,4 +1,4 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ReactStyleSheet = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ReactStyleSheet = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 module.exports = {
 	trueFunc: function trueFunc(){
 		return true;
@@ -2841,7 +2841,6 @@ function parse(formula){
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.weight = weight;
 exports.getAdapter = getAdapter;
 exports.getTagAndPropsFromSelector = getTagAndPropsFromSelector;
 exports.parseCSSObject = parseCSSObject;
@@ -2855,6 +2854,20 @@ var _cssWhat = _interopRequireDefault(require("css-what"));
 var _utils = require("./utils");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(source, true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(source).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
+
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
 
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
@@ -3032,7 +3045,14 @@ function parseCSSObject(object) {
 
 function parseCSSString(css) {
   var rules = [];
-  css.split(/}\s*/).forEach(function (rule) {
+  css.replace(/@([a-z]+[^{]+?)\s*\{([\s\S]+?)}\s*}/gi, function (s, at, stylesheet) {
+    rules.push.apply(rules, _toConsumableArray(parseCSSString(stylesheet).map(function (rule) {
+      return _objectSpread({}, rule, {
+        at: at
+      });
+    })));
+    return '';
+  }).split(/}\s*/).forEach(function (rule) {
     var _rule$split = rule.split(/\s*{\s*/),
         _rule$split2 = _slicedToArray(_rule$split, 2),
         selector = _rule$split2[0],
@@ -3134,14 +3154,14 @@ function applyStyles(elem, rules, config) {
       replace = config.replace;
   var children = elem.props.children;
   var className = replace ? styleId : "".concat(elem.props.className || '', " ").concat(styleId).trim();
-  var style = {};
+  var elemStyles = {};
   rules.forEach(function (rule) {
     try {
       var selector = rule.selector;
       var pseudo;
 
       if (selector.indexOf(':')) {
-        var _selector$split = selector.split(':');
+        var _selector$split = selector.split(/::?/);
 
         var _selector$split2 = _slicedToArray(_selector$split, 2);
 
@@ -3153,26 +3173,31 @@ function applyStyles(elem, rules, config) {
         adapter: adapter
       })) {
         if (pseudo) {
-          globalStyles["".concat(styleId, ":").concat(pseudo)] = _objectSpread({}, globalStyles["".concat(styleId, ":").concat(pseudo)], {}, rule.style);
+          globalStyles[rule.at || 'root'] = globalStyles[rule.at || 'root'] || {};
+          globalStyles[rule.at || 'root']["".concat(styleId, ":").concat(pseudo)] = _objectSpread({}, globalStyles[rule.at || 'root']["".concat(styleId, ":").concat(pseudo)] || {}, {}, rule.style);
         } else if (inline) {
+          if (rule.at) return;
+          elemStyles.root = elemStyles.root || {};
           Object.entries(rule.style).forEach(function (_ref) {
             var _ref2 = _slicedToArray(_ref, 2),
                 k = _ref2[0],
                 v = _ref2[1];
 
-            style[(0, _utils.camelize)(k)] = v;
+            elemStyles.root[(0, _utils.camelize)(k)] = v;
           });
         } else {
-          Object.assign(style, rule.style);
+          elemStyles[rule.at || 'root'] = elemStyles[rule.at || 'root'] || {};
+          Object.assign(elemStyles[rule.at || 'root'], rule.style);
         }
       }
     } catch (err) {//
     }
   });
   var newProps = {};
-
-  if (Object.keys(style).length) {
-    globalStyles[styleId] = style;
+  Object.keys(elemStyles).forEach(function (at) {
+    var style = elemStyles[at];
+    globalStyles[at] = globalStyles[at] || {};
+    globalStyles[at][styleId] = style;
 
     if (inline) {
       newProps.style = elem.props.style ? Object.assign(style, elem.props.style) : style;
@@ -3183,7 +3208,7 @@ function applyStyles(elem, rules, config) {
     } else {
       newProps.className = className;
     }
-  }
+  });
 
   if (children) {
     newProps.children = _react["default"].Children.map(children, function (child, idx) {
@@ -3225,7 +3250,14 @@ function StyleSheet() {
     });
 
     if (!inline) {
-      styleElement.innerHTML = (0, _css.stringifyCSS)(globalStyles);
+      var css = Object.entries(globalStyles).map(function (_ref4) {
+        var _ref5 = _slicedToArray(_ref4, 2),
+            at = _ref5[0],
+            styles = _ref5[1];
+
+        return at === 'root' ? (0, _css.stringifyCSS)(styles) : "@".concat(at, "{").concat((0, _css.stringifyCSS)(styles), "}");
+      }).join('');
+      styleElement.innerHTML = css;
 
       if (!styleElement.parent) {
         document.querySelector('head').appendChild(styleElement);
@@ -3241,9 +3273,9 @@ function StyleSheet() {
     return result;
   };
 
-  hoc.styled = function (selector, extraProps, bindProps) {
+  hoc.styled = function (selector) {
     var style = {};
-    var adapter = (0, _css.getAdapter)(new Map());
+    var adapter = (0, _css.getAdapter)();
 
     var _getTagAndPropsFromSe = (0, _css.getTagAndPropsFromSelector)(selector),
         tagName = _getTagAndPropsFromSe.tagName,
@@ -3253,16 +3285,16 @@ function StyleSheet() {
       try {
         var elem = {
           type: tagName,
-          props: _objectSpread({}, props, {}, extraProps)
+          props: _objectSpread({}, props)
         };
 
         if (_cssSelect["default"].is(elem, rule.selector, {
           adapter: adapter
         })) {
-          Object.entries(rule.style).forEach(function (_ref4) {
-            var _ref5 = _slicedToArray(_ref4, 2),
-                k = _ref5[0],
-                v = _ref5[1];
+          Object.entries(rule.style).forEach(function (_ref6) {
+            var _ref7 = _slicedToArray(_ref6, 2),
+                k = _ref7[0],
+                v = _ref7[1];
 
             style[(0, _utils.camelize)(k)] = v;
           });
@@ -3270,14 +3302,10 @@ function StyleSheet() {
       } catch (err) {//
       }
     });
-    return bindProps ? function (p) {
-      return _react["default"].createElement(tagName, _objectSpread({}, p, {}, extraProps, {
+    return function (ownProps) {
+      return _react["default"].createElement(tagName, _objectSpread({}, props, {
         style: style
-      }));
-    } : function (p) {
-      return _react["default"].createElement(tagName, _objectSpread({}, p, {
-        style: style
-      }));
+      }, ownProps));
     };
   };
 
