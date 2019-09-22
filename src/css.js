@@ -143,7 +143,10 @@ export function parseCSSObject(object) {
 export function parseCSSString(css) {
   const rules = [];
 
-  css.split(/}\s*/).forEach(rule => {
+  css.replace(/@([a-z]+[^{]+?)\s*\{([\s\S]+?)}\s*}/gi, (s, at, stylesheet) => {
+    rules.push(...parseCSSString(stylesheet).map(rule => ({ ...rule, at })));
+    return '';
+  }).split(/}\s*/).forEach(rule => {
     const [selector, declarations] = rule.split(/\s*{\s*/);
     if (!selector || !declarations) return;
     const style = {};

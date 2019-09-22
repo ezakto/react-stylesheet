@@ -33,7 +33,7 @@ function applyStyles(elem, rules, config) {
   const { styleId, globalStyles, adapter, inline, replace } = config;
   const { children } = elem.props;
   const className = replace ? styleId : `${elem.props.className || ''} ${styleId}`.trim();
-  const style = {};
+  const elemStyles = {};
 
   rules.forEach(rule => {
     try {
@@ -46,11 +46,18 @@ function applyStyles(elem, rules, config) {
 
       if (CSSselect.is(elem, selector, { adapter })) {
         if (pseudo) {
-          globalStyles[`${styleId}:${pseudo}`] = { ...globalStyles[`${styleId}:${pseudo}`], ...rule.style };
+          globalStyles[rule.at || 'root'] = globalStyles[rule.at || 'root'] || {};
+          globalStyles[rule.at || 'root'][`${styleId}:${pseudo}`] = {
+            ...globalStyles[rule.at || 'root'][`${styleId}:${pseudo}`] || {},
+            ...rule.style,
+          };
         } else if (inline) {
-          Object.entries(rule.style).forEach(([k, v]) => { style[camelize(k)] = v; });
+          if (rule.at) return;
+          elemStyles.root = elemStyles.root || {};
+          Object.entries(rule.style).forEach(([k, v]) => { elemStyles.root[camelize(k)] = v; });
         } else {
-          Object.assign(style, rule.style);
+          elemStyles[rule.at || 'root'] = elemStyles[rule.at || 'root'] || {};
+          Object.assign(elemStyles[rule.at || 'root'], rule.style);
         }
       }
     } catch (err) {
@@ -60,8 +67,11 @@ function applyStyles(elem, rules, config) {
 
   const newProps = {};
 
-  if (Object.keys(style).length) {
-    globalStyles[styleId] = style;
+  Object.keys(elemStyles).forEach(at => {
+    const style = elemStyles[at];
+
+    globalStyles[at] = globalStyles[at] || {};
+    globalStyles[at][styleId] = style;
 
     if (inline) {
       newProps.style = elem.props.style ? Object.assign(style, elem.props.style) : style;
@@ -72,7 +82,7 @@ function applyStyles(elem, rules, config) {
     } else {
       newProps.className = className;
     }
-  }
+  });
 
   if (children) {
     newProps.children = React.Children.map(children, (child, idx) => applyStyles(child, rules, {
@@ -105,7 +115,11 @@ export default function StyleSheet(...args) {
     }));
 
     if (!inline) {
-      styleElement.innerHTML = stringifyCSS(globalStyles);
+      const css = Object.entries(globalStyles).map(([at, styles]) => (
+        at === 'root' ? stringifyCSS(styles) : `@${at}{${stringifyCSS(styles)}}`
+      )).join('');
+
+      styleElement.innerHTML = css;
 
       if (!styleElement.parent) {
         document.querySelector('head').appendChild(styleElement);
